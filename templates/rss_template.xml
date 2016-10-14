@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+	<channel>
+		<title>HD Torrent Pro</title>
+		<link><![CDATA[https://hdsky.me]]></link>
+		<description><![CDATA[HD Torrent Pro]]></description>
+		{% for t in torrent_list %}
+		<item>
+			<title><![CDATA[{{ t.title }}]]></title>
+			<description><![CDATA[
+]]></description>
+			<enclosure url="{{ t.url }}" length="{{ t.length }}" type="application/x-bittorrent" />
+			<guid isPermaLink="false">{{ t.guid }}</guid>
+		</item>
+		{% endfor %}
+	</channel>
+</rss>
