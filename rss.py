@@ -10,6 +10,7 @@ import requests
 from functools import reduce
 import configparser
 import base64
+
 app = Flask(__name__)
 
 _RSS_CACHE = {}
