@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime, timedelta
 from flask import Flask, request, make_response, render_template
 import hashlib
@@ -72,12 +73,20 @@ def add_to_download():
         torrent_url = base64.urlsafe_b64decode(request.args.get('url').encode()).decode()
         torrent_length = request.args.get('length')
         _DOWNLOAD_RSS_CACHE[guid] = (title, torrent_url, torrent_length)
+        _to_json_file(_DOWNLOAD_RSS_CACHE, 'download_rss.json')
 
-    return make_response()
+
+    else:
+        title = _DOWNLOAD_RSS_CACHE[guid][0]
+
+    return make_response('[{}] has been added to dowload rss.'.format(title))
 
 
 @app.route('/downloadrss', methods=['GET'])
 def pub_download():
+    global _DOWNLOAD_RSS_CACHE
+    if not _DOWNLOAD_RSS_CACHE:
+        _DOWNLOAD_RSS_CACHE = _to_object('download_rss.json')
     passkey = request.args.get('passkey')
     torrent_list = []
     for guid, val in _DOWNLOAD_RSS_CACHE.items():
@@ -115,6 +124,19 @@ def _check_passkey(pass_key):
         return False
 
 
+def _to_json_file(o, file_name):
+    file_path = os.path.join(os.path.dirname(__file__), file_name)    
+    with open(file_path, 'w') as fd:
+        json.dump(o, fd)
+
+
+def _to_object(json_file_name):
+    file_path = os.path.join(os.path.dirname(__file__), json_file_name)    
+    if os.path.exists(file_path):
+        with open(file_path) as fd:
+            return json.load(fd)
+    else:
+        return {} 
 
 
 if __name__ == '__main__':
