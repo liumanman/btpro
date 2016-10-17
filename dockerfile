@@ -9,7 +9,7 @@ RUN pip install requests
 
 # Copy sample app
 COPY ./templates /app/templates
-COPY ./main.py /app/main.py
+COPY ./rss.py /app/rss.py
 COPY ./uwsgi.ini /app/uwsgi.ini
 COPY ./.btpro /tmp/.btpro
 

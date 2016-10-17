@@ -40,6 +40,10 @@ def pub_display():
 
 def _convert_rss(rss):
     root = ET.fromstring(rss)
+    title_elem = list(root.iterfind('channel/title'))[0]
+    title_elem.text += ' - btpro' 
+    link_elem = list(root.iterfind('channel/link'))[0]
+    link_elem.text = 'https://kikk.ml/btpro'
     for elem in root.iterfind('channel/item'):
         description_elem = list(elem.iter('description'))[0]
         description = description_elem.text
@@ -52,7 +56,7 @@ def _convert_rss(rss):
             torrent_url = t.attrib['url']
             torrent_length = t.attrib['length']
             qs = 'guid={0}&title={1}&url={2}&length={3}&passkey={4}'.format(guid, base64.urlsafe_b64encode(title.encode()).decode(), base64.urlsafe_b64encode(torrent_url.encode()).decode(), torrent_length, _PASS_KEY_MD5)
-            description_elem.text = '<a href="addtodownload?' + qs + '">Download</a><br>' + description 
+            description_elem.text = '<a href="https://kikk.ml/btpro/addtodownload?' + qs + '">Download</a><br>' + description 
 
     return ET.tostring(root)
 
