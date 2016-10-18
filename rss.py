@@ -1,5 +1,6 @@
 import os
 import json
+from functools import reduce
 from datetime import datetime, timedelta
 from flask import Flask, request, make_response, render_template
 import hashlib
@@ -15,7 +16,8 @@ import base64
 app = Flask(__name__)
 
 _RSS_CACHE = {}
-_DOWNLOAD_RSS_CACHE = {}
+_DOWNLOAD_RSS_CACHE = None 
+_MAX_DOWNLOAD_RSS_COUNT = 3
 
 
 config = configparser.RawConfigParser()
@@ -42,7 +44,7 @@ def pub_display():
 def _convert_rss(rss):
     root = ET.fromstring(rss)
     title_elem = list(root.iterfind('channel/title'))[0]
-    title_elem.text += ' - btpro' 
+    title_elem.text += ' - btpro'
     link_elem = list(root.iterfind('channel/link'))[0]
     link_elem.text = 'https://kikk.ml/btpro'
     for elem in root.iterfind('channel/item'):
@@ -64,15 +66,24 @@ def _convert_rss(rss):
 
 @app.route('/addtodownload', methods=['GET'])
 def add_to_download():
+    if _DOWNLOAD_RSS_CACHE is None:
+        _load_download_rss()
+
     pass_key = request.args.get('passkey')
     if pass_key != _PASS_KEY_MD5:
         return 'Not allowed', 401
+
     guid = request.args.get('guid')
     if guid not in _DOWNLOAD_RSS_CACHE:
+        if len(_DOWNLOAD_RSS_CACHE) >= _MAX_DOWNLOAD_RSS_COUNT:
+            t = reduce(lambda v, i: v if v[1][3] <= i[1][3] else i, _DOWNLOAD_RSS_CACHE.items())
+            del _DOWNLOAD_RSS_CACHE[t[0]]
+
         title = base64.urlsafe_b64decode(request.args.get('title').encode()).decode()
         torrent_url = base64.urlsafe_b64decode(request.args.get('url').encode()).decode()
         torrent_length = request.args.get('length')
-        _DOWNLOAD_RSS_CACHE[guid] = (title, torrent_url, torrent_length)
+        in_date = datetime.now().strftime('%Y%m%d %H%M%S')
+        _DOWNLOAD_RSS_CACHE[guid] = (title, torrent_url, torrent_length, in_date)
         _to_json_file(_DOWNLOAD_RSS_CACHE, 'download_rss.json')
 
 
@@ -84,9 +95,9 @@ def add_to_download():
 
 @app.route('/downloadrss', methods=['GET'])
 def pub_download():
-    global _DOWNLOAD_RSS_CACHE
-    if not _DOWNLOAD_RSS_CACHE:
-        _DOWNLOAD_RSS_CACHE = _to_object('download_rss.json')
+    if _DOWNLOAD_RSS_CACHE is None:
+        _load_download_rss()
+
     passkey = request.args.get('passkey')
     torrent_list = []
     for guid, val in _DOWNLOAD_RSS_CACHE.items():
@@ -137,6 +148,11 @@ def _to_object(json_file_name):
             return json.load(fd)
     else:
         return {} 
+
+
+def _load_download_rss():
+    global _DOWNLOAD_RSS_CACHE
+    _DOWNLOAD_RSS_CACHE = _to_object('download_rss.json')
 
 
 if __name__ == '__main__':
